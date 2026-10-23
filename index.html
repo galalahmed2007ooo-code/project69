@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project 69</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=Lalezar&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#14101c; --card:#1d1729; --orange:#ff8a2b; --btn:#c94a08; --bone:#f1e8d6; --teal:#4fd1c5; --err:#ff9a9a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { min-height:100vh; background:var(--bg); color:var(--bone); font-family:"Cairo",system-ui,sans-serif; line-height:1.7; padding:16px; }
+  .card { max-width:560px; margin:0 auto; background:var(--card); border-radius:18px; padding:14px 14px 24px; }
+  .hero { position:relative; border-radius:14px; overflow:hidden; }
+  .hero svg { display:block; width:100%; height:auto; }
+  .hero h1 {
+    position:absolute; inset:auto 0 6% 0; margin:0; text-align:center;
+    font-family:"Lalezar","Cairo",sans-serif; font-weight:400; direction:ltr;
+    font-size:clamp(2.6rem,11vw,4.4rem); line-height:1; color:var(--orange);
+    text-shadow:0 0 18px rgba(255,138,43,.75), 0 2px 0 #3a1500;
+  }
+  .flame { animation:flicker 2.8s ease-in-out infinite; }
+  @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:.8} }
+  .info { text-align:center; padding:16px 6px 6px; }
+  .tag { margin:0; font-size:1.05rem; }
+  .date { margin:4px 0 0; color:var(--orange); font-weight:600; font-size:1.15rem; }
+  form { display:grid; gap:14px; margin-top:18px; }
+  label { display:grid; gap:4px; font-weight:600; }
+  label small { font-weight:400; opacity:.75; }
+  input { font:inherit; padding:12px 14px; border-radius:10px; border:2px solid #4b3a6e; background:rgba(255,255,255,.05); color:var(--bone); }
+    input:focus-visible, button:focus-visible { outline:3px solid var(--bone); outline-offset:2px; }
+  input[aria-invalid="true"] { border-color:var(--err); }
+  .error { color:var(--err); font-size:.9rem; min-height:1.2em; margin:0; }
+  button { font:inherit; font-weight:600; font-size:1.1rem; padding:15px; border:0; border-radius:12px; background:var(--btn); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:wait; }
+  .note { font-size:.85rem; opacity:.7; margin:0; }
+  .done { display:none; margin-top:18px; padding:20px; border:2px solid var(--teal); border-radius:14px; text-align:center; }
+  .done h2 { margin:0 0 6px; font-family:"Lalezar","Cairo",sans-serif; font-weight:400; color:var(--orange); font-size:1.8rem; }
+  @media (prefers-reduced-motion: reduce) { .flame { animation:none; } }
+  [hidden] { display:none !important; }
+  .cta { width:100%; margin-top:14px; letter-spacing:.02em; }
+  .back { background:none; color:var(--bone); padding:6px 0; font-size:1rem; opacity:.8; text-align:left; }
+  .form-title { font-family:"Lalezar","Cairo",sans-serif; font-weight:400; color:var(--orange); font-size:2.2rem; line-height:1.1; margin:8px 0 0; }
+  .done { text-align:left; }
+  .prices { margin:4px 0 0; font-size:1.05rem; }
+  .prices b { color:var(--orange); }
+  .ticket { border:0; padding:0; margin:0; display:grid; gap:8px; }
+  .ticket legend { font-weight:600; padding:0; margin-bottom:6px; }
+  .opt { display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid #4b3a6e; border-radius:10px; background:rgba(255,255,255,.05); cursor:pointer; }
+  .opt input { width:20px; height:20px; padding:0; accent-color:var(--orange); }
+  .ticket[aria-invalid="true"] .opt { border-color:var(--err); }
+  .wa { display:block; margin-top:14px; padding:15px; text-align:center; text-decoration:none; font-weight:600; font-size:1.1rem; border-radius:12px; background:#1a7f43; color:#fff; }
+  .done { position:relative; overflow:hidden; padding:100px 22px 104px; text-align:center; color:#2b1b0e;
+    border:3px solid #1a0f08; border-radius:6px; box-shadow:0 0 26px rgba(255,138,43,.45);
+    background:radial-gradient(ellipse at 50% 40%, #f0e3c2, #dcc795 75%, #bfa56c); }
+  .done > :not(svg) { position:relative; }
+  .done svg { position:absolute; left:0; width:100%; height:auto; }
+  .done .top { top:0; } .done .bottom { bottom:0; }
+  .done h2 { color:#a83a06; font-size:2.1rem; text-shadow:0 1px 0 rgba(255,255,255,.4); }
+  .done #who { background:#2b1b0e; color:#ffb066; padding:0 10px; border-radius:6px; text-shadow:0 0 8px rgba(255,138,43,.8); }
+</style>
+</head>
+<body>
+<main class="card">
+<section id="landing">
+  <div class="hero">
+    <!-- Put your licensed picture next to this file as hero.jpg and it will replace the drawn scene automatically -->
+    <img src="hero.jpg" alt="Project 69 Halloween party" onerror="this.remove()" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+    <svg viewBox="0 0 560 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A haunted house under the moon between two jack-o-lanterns">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#08202e"/><stop offset=".5" stop-color="#0d5f68"/><stop offset="1" stop-color="#4a1f78"/>
+        </linearGradient>
+        <radialGradient id="glow"><stop offset="0" stop-color="#c8fff4" stop-opacity=".8"/><stop offset="1" stop-color="#c8fff4" stop-opacity="0"/></radialGradient>
+        <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#c0408a" stop-opacity="0"/><stop offset="1" stop-color="#c0408a" stop-opacity=".6"/>
+        </linearGradient>
+        <g id="pk">
+          <ellipse cx="0" cy="0" rx="58" ry="44" fill="#7a2f0e"/>
+          <ellipse cx="-22" cy="0" rx="24" ry="43" fill="#5e2208"/>
+          <ellipse cx="22" cy="0" rx="24" ry="43" fill="#5e2208"/>
+          <path d="M-4 -44 q-2 -16 10 -20 q2 10 -2 20z" fill="#2c3a12"/>
+          <g class="flame" fill="#ffc34d">
+            <path d="M-38 -14 l22 -6 l-8 22z"/><path d="M38 -14 l-22 -6 l8 22z"/>
+            <path d="M-34 14 q34 30 68 0 l-10 -3 l-8 9 l-16 -9 l-16 9 l-8 -9z"/>
+          </g>
+        </g>
+        <path id="bat" d="M0 0 q10 -16 22 0 q10 -10 22 0 q-10 3 -12 14 q-9 -7 -20 0 q-2 -11 -12 -14z"/>
+      </defs>
+      <rect width="560" height="420" fill="url(#sky)"/>
+      <circle cx="280" cy="150" r="150" fill="url(#glow)"/>
+      <circle cx="280" cy="150" r="88" fill="#d3fff6" opacity=".92"/>
+      <!-- branches -->
+      <g stroke="#0a0714" stroke-width="7" stroke-linecap="round" fill="none">
+        <path d="M0 40 q70 10 120 70 M60 52 q-6 40 -30 70 M100 90 q40 -4 60 -36"/>
+        <path d="M560 30 q-80 20 -130 90 M500 62 q10 40 40 64 M450 100 q-30 -10 -50 -42"/>
+      </g>
+      <!-- house -->
+      <g fill="#0e0919">
+        <rect x="228" y="215" width="104" height="140"/>
+        <polygon points="222,215 280,95 338,215"/>
+        <rect x="276" y="62" width="8" height="40"/>
+        <rect x="190" y="245" width="44" height="110"/><polygon points="184,245 212,172 240,245"/>
+        <rect x="326" y="245" width="44" height="110"/><polygon points="320,245 348,172 376,245"/>
+        <polygon points="150,355 410,355 380,375 180,375"/>
+      </g>
+      <g fill="#ff9a3c" class="flame">
+        <rect x="270" y="150" width="20" height="30" rx="10"/>
+        <rect x="244" y="232" width="16" height="26" rx="8"/><rect x="300" y="232" width="16" height="26" rx="8"/>
+        <rect x="203" y="262" width="18" height="28" rx="9"/><rect x="339" y="262" width="18" height="28" rx="9"/>
+        <rect x="203" y="312" width="18" height="28" rx="9"/><rect x="339" y="312" width="18" height="28" rx="9"/>
+      </g>
+      <path d="M266 355 v-38 a14 14 0 0 1 28 0 v38z" fill="#ff5a3c"/>
+      <!-- bats -->
+      <g fill="#0a0714">
+        <use href="#bat" x="380" y="86"/><use href="#bat" x="120" y="170" transform="scale(.8) translate(30 40)"/>
+        <use href="#bat" x="450" y="170" transform="scale(.6) translate(300 100)"/>
+      </g>
+      <!-- pumpkins + mist -->
+      <use href="#pk" x="82" y="330"/>
+      <use href="#pk" x="478" y="336" transform="translate(956 0) scale(-1 1)"/>
+      <rect y="290" width="560" height="130" fill="url(#mist)"/>
+    </svg>
+    <h1>PROJECT 69</h1>
+  </div>
+
+  <div class="info">
+    <p class="tag">One night. One invitation.</p>
+    <!-- Edit the date, time and location here -->
+    <p class="date">OCTOBER 30 &bull; 2026</p>
+    <p class="prices">Girls <b>300 EGP</b> &nbsp;&bull;&nbsp; Guys <b>600 EGP</b></p>
+  </div>
+  <button type="button" class="cta" id="claim">CLAIM YOUR INVITATION</button>
+</section>
+
+<section id="signup" hidden>
+  <button type="button" class="back" id="back">&larr; Back</button>
+  <h2 class="form-title">Claim your invitation</h2>
+  <p class="note">Project 69 &bull; October 30, 2026</p>
+
+  <form id="rsvp" novalidate>
+    <label>Full name
+      <input id="name" name="name" autocomplete="name" required>
+      <span class="error" id="e-name"></span>
+    </label>
+    <label>Instagram link
+      <input id="insta" name="insta" inputmode="url" placeholder="https://instagram.com/username" required>
+      <span class="error" id="e-insta"></span>
+    </label>
+    <fieldset id="ticket" class="ticket">
+      <legend>Ticket</legend>
+      <label class="opt"><input type="radio" name="ticket" value="girls"> Girls &mdash; 300 EGP</label>
+      <label class="opt"><input type="radio" name="ticket" value="guys"> Guys &mdash; 600 EGP</label>
+      <span class="error" id="e-ticket"></span>
+    </fieldset>
+    <label>Phone number <small>Optional</small>
+      <input id="phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX">
+      <span class="error" id="e-phone"></span>
+    </label>
+    <button id="btn" type="submit">Submit</button>
+    <p class="note">Your details are used to organize the party only.</p>
+    <p class="error" id="e-form" role="alert"></p>
+  </form>
+
+  <div class="done" id="done" role="status">
+    <svg class="top" viewBox="0 0 560 120" aria-hidden="true">
+      <circle cx="280" cy="58" r="58" fill="#ffb066" opacity=".3"/>
+      <circle cx="280" cy="58" r="44" fill="#fff4d6"/>
+      <g fill="#1a0f08">
+        <path d="M244 76 L320 52" stroke="#1a0f08" stroke-width="3" fill="none"/>
+        <path d="M320 52 l16 -7 l-3 11z"/>
+        <ellipse cx="282" cy="56" rx="12" ry="3"/><path d="M274 55 l9 -24 l8 24z"/>
+        <path d="M277 58 l11 0 l-4 12 l-11 4z"/>
+        <path d="M50 44 q8 -12 16 0 q8 -8 16 0 q-8 2 -9 10 q-7 -5 -14 0 q-1 -8 -9 -10z"/>
+        <path d="M430 30 q7 -10 14 0 q7 -7 14 0 q-7 2 -8 9 q-6 -4 -12 0 q-1 -7 -8 -9z"/>
+        <path d="M120 86 q6 -8 12 0 q6 -5 12 0 q-6 1 -7 7 q-4 -3 -9 0 q-1 -5 -8 -7z"/>
+      </g>
+      <g stroke="#6b5a45" stroke-width="1.2" fill="none" opacity=".6">
+        <path d="M560 0 L470 0 M560 0 L560 90 M560 0 L505 70 M560 0 L535 85 M540 0 q-4 22 -22 34 M510 0 q-8 36 -42 52"/>
+        <path d="M0 0 L90 0 M0 0 L0 90 M0 0 L55 70 M20 0 q4 22 22 34 M50 0 q8 36 42 52"/>
+      </g>
+    </svg>
+    <svg class="bottom" viewBox="0 0 560 100" aria-hidden="true">
+      <defs>
+        <g id="pk2">
+          <ellipse rx="36" ry="27" fill="#ff8a2b"/>
+          <ellipse cx="-13" rx="14" ry="27" fill="#e8660f"/><ellipse cx="13" rx="14" ry="27" fill="#e8660f"/>
+          <path d="M-3 -27 q-1 -9 6 -11 q1 6 -1 11z" fill="#3a4a14"/>
+          <path d="M-21 -7 l12 -3 l-4 12z M21 -7 l-12 -3 l4 12z M-19 8 q19 15 38 0 l-6 -2 l-5 6 l-8 -6 l-8 6 l-5 -6z" fill="#1a0f08"/>
+        </g>
+      </defs>
+      <use href="#pk2" transform="translate(58 70)"/>
+      <use href="#pk2" transform="translate(122 82) scale(.65)"/>
+      <use href="#pk2" transform="translate(502 70)"/>
+      <use href="#pk2" transform="translate(440 82) scale(.65)"/>
+    </svg>
+    <h2>You're on the list!</h2>
+    <p>Thanks, <span id="who"></span>! Your <b id="tk"></b> ticket is <b id="price"></b>.</p>
+    <p>To confirm your spot, message us on WhatsApp to arrange the payment.</p>
+    <a class="wa" id="wa" href="#" target="_blank" rel="noopener">PAY VIA WHATSAPP</a>
+  </div>
+</section>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  import { firebaseConfig } from "./firebase-config.js";
+  const db = getFirestore(initializeApp(firebaseConfig));
+
+  // The Instagram username is used as the document ID, so the same account cannot register twice.
+  async function saveRegistration({ name, insta, phone, ticket }) {
+    const handle = insta.match(/instagram\.com\/([A-Za-z0-9._]+)/i)[1].toLowerCase();
+    await setDoc(doc(db, "registrations", handle), {
+      name, insta, phone, ticket, handle, createdAt: serverTimestamp()
+    });
+  }
+
+  const $ = id => document.getElementById(id);
+  const WHATSAPP = "201027735507"; // Egypt country code + number without the leading 0
+  const TICKETS = { girls: { label: "Girls", price: "300 EGP" }, guys: { label: "Guys", price: "600 EGP" } };
+  const instaRe = /^https?:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._]+\/?(\?.*)?$/i;
+  const phoneRe = /^(\+20|0020|0)?1[0125]\d{8}$/;
+
+  function show(view) {
+    $("landing").hidden = view !== "landing";
+    $("signup").hidden = view !== "signup";
+    window.scrollTo(0, 0);
+    if (view === "signup") $("name").focus();
+  }
+  $("claim").addEventListener("click", () => show("signup"));
+  $("back").addEventListener("click", () => show("landing"));
+
+  function setError(field, msg) {
+    $("e-" + field).textContent = msg;
+    $(field).setAttribute("aria-invalid", msg ? "true" : "false");
+    return !msg;
+  }
+
+  $("rsvp").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("name").value.trim();
+    const insta = $("insta").value.trim();
+    const phone = $("phone").value.replace(/[\s-]/g, "");
+
+    const ticket = document.querySelector('input[name="ticket"]:checked')?.value || "";
+    const ok = [
+      setError("name", name.length < 2 ? "Enter your name." : ""),
+      setError("ticket", ticket ? "" : "Choose your ticket."),
+      setError("insta", instaRe.test(insta) ? "" : "Enter your full Instagram link, e.g. https://instagram.com/username"),
+      setError("phone", !phone || phoneRe.test(phone) ? "" : "That number doesn't look right. Use a format like 01012345678 or leave it empty.")
+    ].every(Boolean);
+    if (!ok) return;
+
+    $("btn").disabled = true;
+    $("e-form").textContent = "";
+    try {
+      await saveRegistration({ name, insta, phone, ticket });
+      $("who").textContent = name;
+      $("tk").textContent = TICKETS[ticket].label;
+      $("price").textContent = TICKETS[ticket].price;
+      const msg = `Hi! I just registered for Project 69.\nName: ${name}\nInstagram: ${insta}\nTicket: ${TICKETS[ticket].label} (${TICKETS[ticket].price})\nI'd like to pay for my ticket.`;
+      $("wa").href = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msg);
+      $("rsvp").style.display = "none";
+      $("done").style.display = "block";
+    } catch (err) {
+      console.error(err);
+      $("e-form").textContent = err.code === "permission-denied"
+        ? "This Instagram account is already registered."
+        : "Something went wrong while registering. Please try again.";
+      $("btn").disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

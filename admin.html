@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Project 69 Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=Lalezar&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#14101c; --card:#1d1729; --orange:#ff8a2b; --btn:#c94a08; --bone:#f1e8d6; --line:#3a2f52; --err:#ff9a9a; --ok:#6fd08c; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--bone); font-family:"Cairo",system-ui,sans-serif; line-height:1.6; padding:16px; }
+  main { max-width:1000px; margin:0 auto; }
+  h1 { font-family:"Lalezar","Cairo",sans-serif; font-weight:400; color:var(--orange); font-size:2.2rem; margin:0; }
+  .card { background:var(--card); border-radius:16px; padding:20px; }
+  #login { max-width:380px; margin:10vh auto 0; }
+  form { display:grid; gap:12px; margin-top:12px; }
+  label { display:grid; gap:4px; font-weight:600; }
+  input[type=email], input[type=password] { font:inherit; padding:12px; border-radius:10px; border:2px solid #4b3a6e; background:rgba(255,255,255,.05); color:var(--bone); }
+  button { font:inherit; font-weight:600; padding:12px 18px; border:0; border-radius:10px; background:var(--btn); color:#fff; cursor:pointer; }
+  button.alt { background:transparent; border:2px solid var(--line); color:var(--bone); }
+  button:disabled { opacity:.6; }
+  input:focus-visible, button:focus-visible { outline:3px solid var(--bone); outline-offset:2px; }
+  .error { color:var(--err); margin:0; min-height:1.2em; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:16px; }
+  .stat { background:var(--card); border-radius:12px; padding:12px 14px; }
+  .stat b { display:block; font-size:1.5rem; color:var(--orange); }
+  .stat span { font-size:.85rem; opacity:.8; }
+  .actions { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+  .wrap { overflow-x:auto; background:var(--card); border-radius:12px; }
+  table { width:100%; border-collapse:collapse; min-width:640px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { font-size:.85rem; opacity:.8; }
+  td a { color:var(--orange); }
+  input[type=checkbox] { width:22px; height:22px; accent-color:var(--ok); }
+</style>
+</head>
+<body>
+<main>
+
+  <section id="login" class="card">
+    <h1>Project 69 Admin</h1>
+    <form id="lf">
+      <label>Email <input id="em" type="email" autocomplete="username" required></label>
+      <label>Password <input id="pw" type="password" autocomplete="current-password" required></label>
+      <button id="lb" type="submit">Sign in</button>
+      <p class="error" id="le" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="panel" hidden>
+    <header>
+      <h1>Guest list</h1>
+      <button id="out" class="alt" type="button">Sign out</button>
+    </header>
+    <div class="stats" id="stats"></div>
+    <div class="actions">
+      <button id="pdf" type="button">Download PDF</button>
+      <button id="csv" class="alt" type="button">Download CSV (Excel)</button>
+    </div>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>#</th><th>Name</th><th>Instagram</th><th>Phone</th><th>Ticket</th><th>Paid</th><th>Registered</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p class="error" id="msg" role="status"></p>
+  </section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { firebaseConfig } from "./firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const $ = id => document.getElementById(id);
+  const PRICE = { girls: 300, guys: 600 };
+  const LABEL = { girls: "Girls", guys: "Guys" };
+  let docs = [];   // newest first
+  let unsub = null;
+
+  $("lf").addEventListener("submit", async e => {
+    e.preventDefault();
+    $("le").textContent = "";
+    $("lb").disabled = true;
+    try { await signInWithEmailAndPassword(auth, $("em").value.trim(), $("pw").value); }
+    catch { $("le").textContent = "Wrong email or password."; }
+    $("lb").disabled = false;
+  });
+  $("out").addEventListener("click", () => signOut(auth));
+
+  onAuthStateChanged(auth, user => {
+    $("login").hidden = !!user;
+    $("panel").hidden = !user;
+    if (unsub) { unsub(); unsub = null; }
+    docs = [];
+    if (!user) return;
+    $("msg").textContent = "";
+    unsub = onSnapshot(
+      query(collection(db, "registrations"), orderBy("createdAt", "desc")),
+      snap => { docs = snap.docs.map(d => ({ id: d.id, ...d.data() })); render(); },
+      err => { console.error(err); $("msg").textContent = "Access denied. This account is not the admin account."; }
+    );
+  });
+
+  const when = r => r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "";
+  const cell = text => { const td = document.createElement("td"); td.textContent = text; return td; };
+
+  function render() {
+    const body = $("rows");
+    body.replaceChildren();
+    let girls = 0, guys = 0, paid = 0, expected = 0, collected = 0;
+
+    docs.forEach((r, i) => {
+      const price = PRICE[r.ticket] || 0;
+      if (r.ticket === "girls") girls++; else if (r.ticket === "guys") guys++;
+      expected += price;
+      if (r.paid === true) { paid++; collected += price; }
+
+      const tr = document.createElement("tr");
+      tr.append(cell(docs.length - i), cell(r.name || ""));
+
+      const igTd = document.createElement("td");
+      const a = document.createElement("a");
+      a.textContent = "@" + (r.handle || "");
+      if (/^[a-z0-9._]+$/.test(r.handle || "")) {   // link built from the handle only, never from stored text
+        a.href = "https://instagram.com/" + encodeURIComponent(r.handle);
+        a.target = "_blank"; a.rel = "noopener";
+      }
+      igTd.append(a);
+      tr.append(igTd, cell(r.phone || "-"), cell(LABEL[r.ticket] || "-"));
+
+      const payTd = document.createElement("td");
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = r.paid === true;
+      cb.setAttribute("aria-label", "Paid: " + (r.name || ""));
+      cb.addEventListener("change", async () => {
+        try { await updateDoc(doc(db, "registrations", r.id), { paid: cb.checked }); }
+        catch (err) { console.error(err); cb.checked = !cb.checked; $("msg").textContent = "Could not update. Check your connection and try again."; }
+      });
+      payTd.append(cb);
+      tr.append(payTd, cell(when(r)));
+      body.append(tr);
+    });
+
+    const stats = [[docs.length, "Total guests"], [girls, "Girls"], [guys, "Guys"], [paid, "Paid"], [expected + " EGP", "Expected"], [collected + " EGP", "Collected"]];
+    $("stats").replaceChildren(...stats.map(([v, l]) => {
+      const d = document.createElement("div"); d.className = "stat";
+      const b = document.createElement("b"); b.textContent = v;
+      const s = document.createElement("span"); s.textContent = l;
+      d.append(b, s); return d;
+    }));
+    $("msg").textContent = docs.length ? "" : "No registrations yet.";
+  }
+
+  // Oldest first for exports
+  const asc = () => [...docs].reverse();
+
+  $("pdf").addEventListener("click", () => {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+    const paidN = docs.filter(r => r.paid === true).length;
+    pdf.setFontSize(16);
+    pdf.text("Project 69 - Guest list (October 30, 2026)", 14, 16);
+    pdf.setFontSize(10);
+    pdf.text(`Total: ${docs.length}   Paid: ${paidN}   Exported: ${new Date().toLocaleString("en-GB")}`, 14, 23);
+    pdf.autoTable({
+      startY: 28,
+      head: [["#", "Name", "Instagram", "Phone", "Ticket", "Paid"]],
+      body: asc().map((r, i) => [i + 1, r.name || "", "@" + (r.handle || ""), r.phone || "-", LABEL[r.ticket] || "-", r.paid ? "Yes" : "No"]),
+      headStyles: { fillColor: [201, 74, 8] },
+      styles: { fontSize: 9 }
+    });
+    pdf.save("project69-guests.pdf");
+  });
+
+  $("csv").addEventListener("click", () => {
+    const q = v => {
+      let s = String(v ?? "");
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // stops spreadsheet formula injection
+      return '"' + s.replace(/"/g, '""') + '"';
+    };
+    const rows = [["#", "Name", "Instagram", "Phone", "Ticket", "Paid", "Registered"],
+      ...asc().map((r, i) => [i + 1, r.name, "@" + r.handle, r.phone || "", LABEL[r.ticket] || "", r.paid ? "Yes" : "No", when(r)])];
+    const blob = new Blob(["\uFEFF" + rows.map(r => r.map(q).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "project69-guests.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>
+</body>
+</html>
