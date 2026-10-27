@@ -47,6 +47,7 @@
       <label>Email <input id="em" type="email" autocomplete="username" required></label>
       <label>Password <input id="pw" type="password" autocomplete="current-password" required></label>
       <button id="lb" type="submit">Sign in</button>
+      <button id="fp" class="alt" type="button">Forgot password?</button>
       <p class="error" id="le" role="alert"></p>
     </form>
   </section>
@@ -77,15 +78,16 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { firebaseConfig } from "./firebase-config.js";
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
   const $ = id => document.getElementById(id);
-  const PRICE = { girls: 300, guys: 600 };
+  const PRICE = { girls: 0, guys: 400 };
   const LABEL = { girls: "Girls", guys: "Guys" };
+  const payLabel = r => r.ticket === "girls" ? "Free" : (r.paid ? "Yes" : "No");
   let docs = [];   // newest first
   let unsub = null;
 
@@ -94,10 +96,24 @@
     $("le").textContent = "";
     $("lb").disabled = true;
     try { await signInWithEmailAndPassword(auth, $("em").value.trim(), $("pw").value); }
-    catch { $("le").textContent = "Wrong email or password."; }
+    catch (err) {
+      const c = err.code || "";
+      $("le").textContent =
+        /invalid-credential|wrong-password|user-not-found|invalid-email/.test(c) ? "Wrong email or password. Check that the keyboard language is English." :
+        c.includes("too-many-requests") ? "Too many attempts. Wait a few minutes, or use Forgot password." :
+        c.includes("unauthorized-domain") ? "This website address is not authorized in Firebase (Authentication > Settings > Authorized domains)." :
+        c.includes("network") ? "No connection. Check your internet and try again." :
+        "Sign-in failed (" + (c || "unknown error") + ").";
+    }
     $("lb").disabled = false;
   });
   $("out").addEventListener("click", () => signOut(auth));
+  $("fp").addEventListener("click", async () => {
+    const email = $("em").value.trim();
+    if (!email) { $("le").textContent = "Type your email above first, then press Forgot password."; return; }
+    try { await sendPasswordResetEmail(auth, email); } catch (err) { console.error(err); }
+    $("le").textContent = "If this email has an admin account, a reset link was sent. Check your inbox and spam folder.";
+  });
 
   onAuthStateChanged(auth, user => {
     $("login").hidden = !!user;
@@ -149,11 +165,12 @@
         catch (err) { console.error(err); cb.checked = !cb.checked; $("msg").textContent = "Could not update. Check your connection and try again."; }
       });
       payTd.append(cb);
+      if (r.ticket === "girls") payTd.replaceChildren(document.createTextNode("Free"));
       tr.append(payTd, cell(when(r)));
       body.append(tr);
     });
 
-    const stats = [[docs.length, "Total guests"], [girls, "Girls"], [guys, "Guys"], [paid, "Paid"], [expected + " EGP", "Expected"], [collected + " EGP", "Collected"]];
+    const stats = [[docs.length, "Total guests"], [girls, "Girls"], [guys, "Guys"], [paid, "Guys paid"], [expected + " EGP", "Expected"], [collected + " EGP", "Collected"]];
     $("stats").replaceChildren(...stats.map(([v, l]) => {
       const d = document.createElement("div"); d.className = "stat";
       const b = document.createElement("b"); b.textContent = v;
@@ -177,7 +194,7 @@
     pdf.autoTable({
       startY: 28,
       head: [["#", "Name", "Instagram", "Phone", "Ticket", "Paid"]],
-      body: asc().map((r, i) => [i + 1, r.name || "", "@" + (r.handle || ""), r.phone || "-", LABEL[r.ticket] || "-", r.paid ? "Yes" : "No"]),
+      body: asc().map((r, i) => [i + 1, r.name || "", "@" + (r.handle || ""), r.phone || "-", LABEL[r.ticket] || "-", payLabel(r)]),
       headStyles: { fillColor: [201, 74, 8] },
       styles: { fontSize: 9 }
     });
@@ -191,7 +208,7 @@
       return '"' + s.replace(/"/g, '""') + '"';
     };
     const rows = [["#", "Name", "Instagram", "Phone", "Ticket", "Paid", "Registered"],
-      ...asc().map((r, i) => [i + 1, r.name, "@" + r.handle, r.phone || "", LABEL[r.ticket] || "", r.paid ? "Yes" : "No", when(r)])];
+      ...asc().map((r, i) => [i + 1, r.name, "@" + r.handle, r.phone || "", LABEL[r.ticket] || "", payLabel(r), when(r)])];
     const blob = new Blob(["\uFEFF" + rows.map(r => r.map(q).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);

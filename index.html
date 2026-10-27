@@ -4,9 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Project 69</title>
+<link rel="preload" as="image" href="landing-bg.jpg">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
+<link rel="modulepreload" href="./firebase-config.js">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=Lalezar&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=Lalezar&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=Lalezar&display=swap"></noscript>
 <style>
   :root { --bg:#14101c; --card:#1d1729; --orange:#ff8a2b; --btn:#c94a08; --bone:#f1e8d6; --teal:#4fd1c5; --err:#ff9a9a; }
   * { box-sizing: border-box; }
@@ -97,11 +102,13 @@
   .land.has-bg { max-width:480px; margin:0 auto; }
   .done.has-bg { padding:0 17% 14%; }
   .done.has-bg h2 { font-size:1.7rem; }
+  .land.has-bg { background-color:#17113a; }
+  .done.has-bg { background-color:#dcc795; }
 </style>
 </head>
 <body>
 <main class="card">
-<section id="landing" class="land">
+<section id="landing" class="land has-bg">
   <svg class="web tl" viewBox="0 0 160 160" aria-hidden="true"><path d="M0 0 L160 0 M0 0 L0 160 M0 0 L125 125 M0 0 L155 60 M0 0 L60 155 M50 0 q6 50 -50 50 M100 0 q10 100 -100 100 M150 0 q14 150 -150 150" stroke="#fff" stroke-opacity=".35" fill="none"/></svg>
   <svg class="web tr" viewBox="0 0 160 160" aria-hidden="true"><path d="M0 0 L160 0 M0 0 L0 160 M0 0 L125 125 M0 0 L155 60 M0 0 L60 155 M50 0 q6 50 -50 50 M100 0 q10 100 -100 100 M150 0 q14 150 -150 150" stroke="#fff" stroke-opacity=".35" fill="none"/></svg>
 
@@ -115,7 +122,7 @@
       <p class="kicker">Don't miss the scariest night of the year</p>
       <!-- Edit the date, time and location here -->
       <h1><span class="o">PROJECT 69</span><br><span class="w">HALLOWEEN NIGHT</span></h1>
-      <p class="lead">One night. One invitation.<br>Girls <b>300 EGP</b> &nbsp;&bull;&nbsp; Guys <b>600 EGP</b></p>
+      <p class="lead">One night. One invitation.<br>Girls <b>FREE</b> &nbsp;&bull;&nbsp; Guys <b>400 EGP</b></p>
       <button type="button" class="cta" id="claim">GET A TICKET</button>
     </div>
     <div class="pumpkin">
@@ -162,8 +169,8 @@
     </label>
     <fieldset id="ticket" class="ticket">
       <legend>Ticket</legend>
-      <label class="opt"><input type="radio" name="ticket" value="girls"> Girls &mdash; 300 EGP</label>
-      <label class="opt"><input type="radio" name="ticket" value="guys"> Guys &mdash; 600 EGP</label>
+      <label class="opt"><input type="radio" name="ticket" value="girls"> Girls &mdash; Free</label>
+      <label class="opt"><input type="radio" name="ticket" value="guys"> Guys &mdash; 400 EGP</label>
       <span class="error" id="e-ticket"></span>
     </fieldset>
     <label>Phone number <small>Optional</small>
@@ -175,7 +182,7 @@
     <p class="error" id="e-form" role="alert"></p>
   </form>
 
-  <div class="done" id="done" role="status">
+  <div class="done has-bg" id="done" role="status">
     <svg class="top" viewBox="0 0 560 120" aria-hidden="true">
       <circle cx="280" cy="58" r="58" fill="#ffb066" opacity=".3"/>
       <circle cx="280" cy="58" r="44" fill="#fff4d6"/>
@@ -214,7 +221,7 @@
     </svg>
     <h2>You're on the list!</h2>
     <p>Thanks, <span id="who"></span>. We'll be in touch soon.</p>
-    <p>Your <b id="tk"></b> ticket is <b id="price"></b>. Message us on WhatsApp to arrange the payment.</p>
+    <p id="tline"></p>
     <a class="wa" id="wa" href="#" target="_blank" rel="noopener">PAY VIA WHATSAPP</a>
   </div>
 </section>
@@ -237,12 +244,12 @@
 
   const $ = id => document.getElementById(id);
   const WHATSAPP = "201027735507"; // Egypt country code + number without the leading 0
-  const TICKETS = { girls: { label: "Girls", price: "300 EGP" }, guys: { label: "Guys", price: "600 EGP" } };
+  const TICKETS = { girls: { label: "Girls", price: "Free" }, guys: { label: "Guys", price: "400 EGP" } };
 
-  // Optional picture backgrounds: if these files exist next to index.html they replace the drawn art.
+  // Picture backgrounds are used by default. If a file is missing, fall back to the drawn art.
   [["landing-bg.jpg", "landing"], ["ending-bg.jpg", "done"]].forEach(([src, id]) => {
     const img = new Image();
-    img.onload = () => $(id).classList.add("has-bg");
+    img.onerror = () => $(id).classList.remove("has-bg");
     img.src = src;
   });
   const instaRe = /^https?:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._]+\/?(\?.*)?$/i;
@@ -279,12 +286,16 @@
     if (!ok) return;
 
     $("btn").disabled = true;
+    $("btn").textContent = "Submitting...";
     $("e-form").textContent = "";
     try {
       await saveRegistration({ name, insta, phone, ticket });
       $("who").textContent = name;
-      $("tk").textContent = TICKETS[ticket].label;
-      $("price").textContent = TICKETS[ticket].price;
+      const free = TICKETS[ticket].price === "Free";
+      $("tline").textContent = free
+        ? "Your Girls ticket is free. See you on October 30!"
+        : `Your ${TICKETS[ticket].label} ticket is ${TICKETS[ticket].price}. Message us on WhatsApp to arrange the payment.`;
+      $("wa").hidden = free;
       const msg = `Hi! I just registered for Project 69.\nName: ${name}\nInstagram: ${insta}\nTicket: ${TICKETS[ticket].label} (${TICKETS[ticket].price})\nI'd like to pay for my ticket.`;
       $("wa").href = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msg);
       $("rsvp").style.display = "none";
@@ -295,6 +306,7 @@
         ? "This Instagram account is already registered."
         : "Something went wrong while registering. Please try again.";
       $("btn").disabled = false;
+      $("btn").textContent = "Submit";
     }
   });
 </script>
